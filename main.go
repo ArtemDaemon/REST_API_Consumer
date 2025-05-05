@@ -19,7 +19,6 @@ type Item struct {
 	Unit            string `json:"unit"`
 	ObsStatus       string `json:"obs_status"`
 	Decimal         uint   `json:"decimal"`
-	CreatedAt       string `json:"created_at"`
 }
 
 func main() {
