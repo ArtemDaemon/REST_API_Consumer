@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/rabbitmq/amqp091-go"
 )
@@ -20,6 +23,8 @@ type Item struct {
 	ObsStatus       string `json:"obs_status"`
 	Decimal         uint   `json:"decimal"`
 }
+
+var history []Item
 
 func main() {
 	conn, err := amqp091.Dial("amqp://guest:guest@localhost:5672/")
@@ -86,7 +91,7 @@ func main() {
 	log.Printf("🟢 Подписчик запущен. Ожидаем новые элементы...\n")
 	log.Println("ℹ️ Введите `last` для запроса последней записи или `exit` для выхода.")
 
-	forever := make(chan bool)
+	// forever := make(chan bool)
 
 	go func() {
 		for d := range msgs {
@@ -96,26 +101,32 @@ func main() {
 				log.Printf("⚠️ Ошибка при разборе JSON: %v", err)
 				continue
 			}
+			history = append(history, item)
 			fmt.Printf("📬 Получено новое сообщение:\n%+v\n\n", item)
 		}
 	}()
 
-	<-forever
+	// <-forever
 
-	// reader := bufio.NewReader(os.Stdin)
-	// for {
-	// 	fmt.Print(">>> ")
-	// 	text, _ := reader.ReadString('\n')
-	// 	text = strings.TrimSpace(text)
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print(">>> ")
+		text, _ := reader.ReadString('\n')
+		text = strings.TrimSpace(text)
 
-	// 	switch text {
-	// 	case "last":
-	// 		// getLastItem(token)
-	// 	case "exit":
-	// 		fmt.Println("👋 Выход.")
-	// 		return
-	// 	default:
-	// 		fmt.Println("❓ Неизвестная команда. Доступны: last, exit")
-	// 	}
-	// }
+		switch text {
+		case "last":
+			if len(history) == 0 {
+				fmt.Println("📭 Сообщений пока нет.")
+			} else {
+				last := history[len(history)-1]
+				fmt.Printf("📦 Последнее сообщение:\n%+v\n\n", last)
+			}
+		case "exit":
+			fmt.Println("👋 Выход.")
+			return
+		default:
+			fmt.Println("❓ Неизвестная команда. Доступны: last, exit")
+		}
+	}
 }
